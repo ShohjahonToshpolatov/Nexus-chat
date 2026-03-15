@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusChat — Create Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0b0f;
+    --surface: #111318;
+    --surface2: #181b22;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(159,122,234,0.4);
+    --accent: #9f7aea;
+    --accent2: #63b3ed;
+    --accent3: #68d391;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --danger: #fc8181;
+    --success: #68d391;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.1;
+    animation: float 18s ease-in-out infinite;
+  }
+
+  .bg-orb:nth-child(1) { width: 500px; height: 500px; background: var(--accent); top: -150px; right: -100px; }
+  .bg-orb:nth-child(2) { width: 350px; height: 350px; background: var(--accent2); bottom: 50px; left: -80px; animation-delay: -9s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(20px, -20px); }
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Left: animated preview */
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    gap: 20px;
+  }
+
+  .preview-logo {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .logo-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .preview-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 3.5vw, 46px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .preview-title span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .preview-sub {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+    max-width: 360px;
+    margin-bottom: 36px;
+  }
+
+  /* Floating chat preview UI */
+  .chat-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    max-width: 300px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .preview-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .preview-name { font-size: 13px; font-weight: 500; }
+  .preview-status { font-size: 11px; color: var(--accent3); }
+
+  .preview-msg {
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 75%;
+    margin-bottom: 6px;
+    animation: fadeInMsg 0.4s ease both;
+  }
+
+  @keyframes fadeInMsg {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .preview-msg.received {
+    background: var(--surface2);
+    color: var(--text-dim);
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+  }
+
+  .preview-msg.sent {
+    background: linear-gradient(135deg, var(--accent), #7c5cc4);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    margin-left: auto;
+  }
+
+  .preview-msgs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Right panel */
+  .auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header { margin-bottom: 28px; }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .card-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  .card-sub a { color: var(--accent2); text-decoration: none; font-weight: 500; }
+  .card-sub a:hover { text-decoration: underline; }
+
+  /* Steps indicator */
+  .steps {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 28px;
+  }
+
+  .step {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    transition: all 0.3s;
+  }
+
+  .step.active .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .step.done .step-num {
+    background: var(--success);
+    border-color: var(--success);
+    color: #000;
+  }
+
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 8px;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; position: relative; }
+
+  .form-label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text-dim); margin-bottom: 7px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .form-input::placeholder { color: var(--text-muted); }
+  .form-input:focus {
+    border-color: var(--accent);
+    background: rgba(159,122,234,0.04);
+    box-shadow: 0 0 0 3px rgba(159,122,234,0.08);
+  }
+
+  .form-input.valid { border-color: var(--success); }
+  .form-input.invalid { border-color: var(--danger); }
+
+  .input-icon-wrap { position: relative; }
+  .input-icon {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted); cursor: pointer;
+    font-size: 16px; user-select: none;
+    transition: color 0.2s;
+  }
+  .input-icon:hover { color: var(--accent); }
+  .input-icon-wrap .form-input { padding-right: 44px; }
+
+  .error-msg {
+    font-size: 12px; color: var(--danger);
+    margin-top: 5px; display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Password strength */
+  .pwd-strength {
+    margin-top: 8px;
+    display: none;
+  }
+  .pwd-strength.show { display: block; }
+
+  .strength-bar {
+    display: flex; gap: 4px; margin-bottom: 4px;
+  }
+
+  .strength-seg {
+    flex: 1; height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    transition: background 0.3s;
+  }
+
+  .strength-seg.weak { background: var(--danger); }
+  .strength-seg.fair { background: #f6ad55; }
+  .strength-seg.good { background: #4fd1c7; }
+  .strength-seg.strong { background: var(--success); }
+
+  .strength-label {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Avatar picker */
+  .avatar-picker {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 20px;
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+
+  .avatar-preview {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .avatar-preview:hover { transform: scale(1.05); }
+
+  .avatar-info { flex: 1; }
+  .avatar-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .avatar-sub { font-size: 11px; color: var(--text-muted); }
+
+  .avatar-colors {
+    display: flex; gap: 6px;
+    margin-top: 8px;
+  }
+
+  .color-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 2px solid transparent;
+  }
+
+  .color-dot:hover, .color-dot.active {
+    transform: scale(1.2);
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  /* Agree */
+  .checkbox-wrap {
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer; font-size: 13px;
+    color: var(--text-dim); user-select: none;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .checkbox-wrap input { display: none; }
+
+  .checkbox-box {
+    width: 18px; height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    background: var(--surface2);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .checkbox-wrap input:checked + .checkbox-box {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .checkbox-wrap a { color: var(--accent); text-decoration: none; }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, var(--accent), #7c5cc4);
+    border: none; border-radius: 12px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    position: relative; overflow: hidden;
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(159,122,234,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary.loading { pointer-events: none; opacity: 0.7; }
+
+  .btn-loader {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn-text { display: block; }
+  .btn-primary.loading .btn-text { display: none; }
+  .btn-primary.loading .btn-loader { display: block; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px; color: var(--text);
+    z-index: 100; opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(104,211,145,0.4); }
+  .toast.error { border-color: rgba(252,129,129,0.4); }
+
+  @media (max-width: 768px) {
+    .page { grid-template-columns: 1fr; }
+    .preview-panel { display: none; }
+    .auth-panel { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+<div class="bg-grid"></div>
+
+<div class="page">
+  <!-- Left preview -->
+  <div class="preview-panel">
+    <div class="preview-logo">
+      <div class="logo-icon">💬</div>
+      <span class="logo-name">NexusChat</span>
+    </div>
+    <h1 class="preview-title">Join millions<br>of <span>conversations.</span></h1>
+    <p class="preview-sub">Create your free account and start connecting instantly. No ads. No spam. Just you and your people.</p>
+
+    <div class="chat-preview">
+      <div class="preview-header">
+        <div class="preview-avatar">🌍</div>
+        <div>
+          <div class="preview-name">World Chat</div>
+          <div class="preview-status">● 2,841 online</div>
+        </div>
+      </div>
+      <div class="preview-msgs">
+        <div class="preview-msg received" style="animation-delay:0.2s">Hey! Welcome to NexusChat 👋</div>
+        <div class="preview-msg sent" style="animation-delay:0.6s">Thanks! This looks amazing 🔥</div>
+        <div class="preview-msg received" style="animation-delay:1s">Create your account to join us!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup form -->
+  <div class="auth-panel">
+    <div class="auth-card">
+      <div class="card-header">
+        <h2 class="card-title">Create account</h2>
+        <p class="card-sub">Already have one? <a href="../index.html">Sign in</a></p>
+      </div>
+
+      <div class="steps">
+        <div class="step active" id="step1">
+          <span class="step-num">1</span>
+          Info
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step2">
+          <span class="step-num">2</span>
+          Security
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step3">
+          <span class="step-num">3</span>
+          Done
+        </div>
+      </div>
+
+      <!-- Avatar picker -->
+      <div class="avatar-picker">
+        <div class="avatar-preview" id="avatarPreview" onclick="cycleEmoji()">😊</div>
+        <div class="avatar-info">
+          <div class="avatar-title">Choose your avatar</div>
+          <div class="avatar-sub">Click to cycle through emojis</div>
+          <div class="avatar-colors">
+            <div class="color-dot active" style="background: linear-gradient(135deg,#9f7aea,#63b3ed)" onclick="setColor(0,this)"></div>
+            <div class="color-dot" style="background: linear-gradient(135deg,#fc8181,#f6ad55)" onclick="setColor(1,this)"></div>
+            <div class="color-dot" style="background: linear-gradient(135deg,#68d391,#4fd1c7)" onclick="setColor(2,this)"></div>
+            <div class="color-dot" style="background: linear-gradient(135deg,#63b3ed,#9f7aea)" onclick="setColor(3,this)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Full name</label>
+        <input class="form-input" type="text" id="signupName" placeholder="John Doe" oninput="validateName()" autocomplete="name">
+        <div class="error-msg" id="nameErr">Name must be at least 2 characters</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" id="signupUsername" placeholder="@johndoe" oninput="validateUsername()" autocomplete="username">
+        <div class="error-msg" id="usernameErr">Username must be 3+ chars, letters/numbers only</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" type="email" id="signupEmail" placeholder="you@example.com" oninput="validateEmail()" autocomplete="email">
+        <div class="error-msg" id="emailErr">Please enter a valid email</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="password" id="signupPassword" placeholder="At least 8 characters" oninput="checkStrength()" autocomplete="new-password">
+          <span class="input-icon" onclick="togglePwd('signupPassword', this)">👁</span>
+        </div>
+        <div class="pwd-strength" id="pwdStrength">
+          <div class="strength-bar">
+            <div class="strength-seg" id="seg1"></div>
+            <div class="strength-seg" id="seg2"></div>
+            <div class="strength-seg" id="seg3"></div>
+            <div class="strength-seg" id="seg4"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel">Strength: —</div>
+        </div>
+        <div class="error-msg" id="pwdErr">Password must be at least 8 characters</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confirm password</label>
+        <div class="input-icon-wrap">
+          <input class="form-input" type="password" id="confirmPassword" placeholder="Repeat password" oninput="validateConfirm()" autocomplete="new-password">
+          <span class="input-icon" onclick="togglePwd('confirmPassword', this)">👁</span>
+        </div>
+        <div class="error-msg" id="confirmErr">Passwords don't match</div>
+      </div>
+
+      <label class="checkbox-wrap">
+        <input type="checkbox" id="agreeTerms">
+        <span class="checkbox-box">✓</span>
+        I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+      </label>
+
+      <button class="btn-primary" onclick="signup()" id="signupBtn">
+        <span class="btn-text">Create Account</span>
+        <div class="btn-loader"></div>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+const emojis = ['😊','🦁','🐺','🦊','🐧','🦄','🐱','🤖','👾','🧑‍🚀','🦸','🎭'];
+const colors = [
+  'linear-gradient(135deg,#9f7aea,#63b3ed)',
+  'linear-gradient(135deg,#fc8181,#f6ad55)',
+  'linear-gradient(135deg,#68d391,#4fd1c7)',
+  'linear-gradient(135deg,#63b3ed,#9f7aea)'
+];
+let emojiIdx = 0, colorIdx = 0;
+
+function cycleEmoji() {
+  emojiIdx = (emojiIdx + 1) % emojis.length;
+  document.getElementById('avatarPreview').textContent = emojis[emojiIdx];
+}
+
+function setColor(idx, el) {
+  colorIdx = idx;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('avatarPreview').style.background = colors[idx];
+}
+
+function togglePwd(id, el) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  el.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+function validateName() {
+  const v = document.getElementById('signupName').value.trim();
+  const ok = v.length >= 2;
+  document.getElementById('signupName').className = 'form-input ' + (v ? (ok ? 'valid' : 'invalid') : '');
+  document.getElementById('nameErr').className = 'error-msg' + (!ok && v ? ' show' : '');
+  return ok;
+}
+
+function validateUsername() {
+  const v = document.getElementById('signupUsername').value.trim().replace('@','');
+  const ok = /^[a-z0-9_]{3,20}$/i.test(v);
+  document.getElementById('signupUsername').className = 'form-input ' + (v ? (ok ? 'valid' : 'invalid') : '');
+  document.getElementById('usernameErr').className = 'error-msg' + (!ok && v ? ' show' : '');
+  return ok;
+}
+
+function validateEmail() {
+  const v = document.getElementById('signupEmail').value.trim();
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  document.getElementById('signupEmail').className = 'form-input ' + (v ? (ok ? 'valid' : 'invalid') : '');
+  document.getElementById('emailErr').className = 'error-msg' + (!ok && v ? ' show' : '');
+  return ok;
+}
+
+function checkStrength() {
+  const v = document.getElementById('signupPassword').value;
+  const bar = document.getElementById('pwdStrength');
+  if (!v) { bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+
+  const segs = ['seg1','seg2','seg3','seg4'];
+  const types = ['weak','fair','good','strong'];
+  const labels = ['Weak','Fair','Good','Strong 🔒'];
+
+  segs.forEach((id, i) => {
+    document.getElementById(id).className = 'strength-seg' + (i < score ? ' ' + types[score-1] : '');
+  });
+  document.getElementById('strengthLabel').textContent = 'Strength: ' + (labels[score-1] || '—');
+  return score >= 2;
+}
+
+function validateConfirm() {
+  const p = document.getElementById('signupPassword').value;
+  const c = document.getElementById('confirmPassword').value;
+  const ok = p === c && c.length > 0;
+  document.getElementById('confirmPassword').className = 'form-input ' + (c ? (ok ? 'valid' : 'invalid') : '');
+  document.getElementById('confirmErr').className = 'error-msg' + (!ok && c ? ' show' : '');
+  return ok;
+}
+
+function markStep(n, done=false) {
+  const el = document.getElementById('step'+n);
+  if (done) { el.classList.remove('active'); el.classList.add('done'); el.querySelector('.step-num').textContent = '✓'; }
+  else { el.classList.add('active'); }
+}
+
+function signup() {
+  const name = document.getElementById('signupName').value.trim();
+  const username = document.getElementById('signupUsername').value.trim().replace('@','');
+  const email = document.getElementById('signupEmail').value.trim();
+  const pwd = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const agreed = document.getElementById('agreeTerms').checked;
+
+  const vName = validateName();
+  const vUser = validateUsername();
+  const vEmail = validateEmail();
+  const vPwd = pwd.length >= 8;
+  const vConfirm = validateConfirm();
+
+  if (!vPwd) { document.getElementById('pwdErr').classList.add('show'); }
+  if (!agreed) { showToast('Please agree to Terms of Service', 'error'); return; }
+  if (!vName || !vUser || !vEmail || !vPwd || !vConfirm) return;
+
+  // Check duplicate
+  const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+  if (users.find(u => u.email === email)) {
+    showToast('Email already registered', 'error'); return;
+  }
+  if (users.find(u => u.username === username)) {
+    showToast('Username taken', 'error'); return;
+  }
+
+  const btn = document.getElementById('signupBtn');
+  btn.classList.add('loading');
+  markStep(1, true);
+
+  setTimeout(() => {
+    markStep(2);
+    setTimeout(() => {
+      markStep(2, true);
+      markStep(3);
+
+      const user = {
+        id: 'u_' + Date.now(),
+        name, username, email, password: pwd,
+        avatar: emojis[emojiIdx],
+        avatarColor: colors[colorIdx],
+        bio: '',
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(user);
+      localStorage.setItem('nexus_users', JSON.stringify(users));
+      localStorage.setItem('nexus_current', JSON.stringify(user));
+
+      btn.classList.remove('loading');
+      showToast('Account created! Welcome, ' + name + '! 🎉');
+      setTimeout(() => location.href = 'chat.html', 1200);
+    }, 700);
+  }, 800);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') signup(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusChat — Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0b0f;
+  --surface: #111318;
+  --surface2: #181b22;
+  --surface3: #1e2230;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #68d391;
+  --accent2: #63b3ed;
+  --accent3: #9f7aea;
+  --text: #e8eaf0;
+  --text-muted: #6b7280;
+  --text-dim: #9ca3af;
+  --danger: #fc8181;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.bg-canvas { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.bg-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: 0.08;
+  animation: float 20s ease-in-out infinite;
+}
+.bg-orb:nth-child(1) { width: 400px; height: 400px; background: var(--accent); top: -100px; left: 50%; animation-delay: 0s; }
+.bg-orb:nth-child(2) { width: 300px; height: 300px; background: var(--accent3); bottom: 0; right: 100px; animation-delay: -10s; }
+@keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px,-20px); } }
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.page {
+  position: relative; z-index: 1;
+  max-width: 700px; margin: 0 auto;
+  padding: 30px 20px;
+  min-height: 100vh;
+}
+
+/* Back btn */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-muted);
+  text-decoration: none;
+  padding: 8px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: all 0.15s;
+  margin-bottom: 28px;
+}
+
+.back-btn:hover { color: var(--text); border-color: var(--border2); }
+
+/* Profile card */
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cover */
+.profile-cover {
+  height: 120px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent3));
+  position: relative;
+  overflow: hidden;
+}
+
+.cover-pattern {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.cover-edit {
+  position: absolute; top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: all 0.15s;
+}
+
+.cover-edit:hover { background: rgba(0,0,0,0.5); }
+
+/* Avatar area */
+.avatar-area {
+  padding: 0 24px 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: -44px;
+}
+
+.avatar-big {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  border: 4px solid var(--surface);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.avatar-big:hover { transform: scale(1.05); }
+
+.avatar-change-hint {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.avatar-big:hover .avatar-change-hint { opacity: 1; }
+
+.avatar-info { flex: 1; padding-bottom: 4px; }
+
+.profile-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 2px;
+}
+
+.profile-username {
+  font-size: 14px; color: var(--text-muted);
+  font-weight: 300;
+}
+
+.avatar-actions {
+  display: flex; gap: 8px;
+  padding-bottom: 4px;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--border);
+}
+
+.btn-sm-primary {
+  background: linear-gradient(135deg, var(--accent), #50b87a);
+  border-color: transparent;
+  color: #000;
+}
+
+.btn-sm-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-sm-ghost {
+  background: var(--surface2);
+  color: var(--text-dim);
+}
+
+.btn-sm-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+/* Sections */
+.section {
+  padding: 0 24px 24px;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 24px 24px;
+}
+
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 14px;
+}
+
+/* Form */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.form-group { margin-bottom: 12px; }
+
+.form-label {
+  display: block; font-size: 11px; font-weight: 500;
+  color: var(--text-dim); margin-bottom: 7px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.form-input::placeholder { color: var(--text-muted); }
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(104,211,145,0.08); }
+
+.form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  resize: none;
+  height: 90px;
+  transition: all 0.2s;
+}
+
+.form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(104,211,145,0.08); }
+
+/* Stats */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Avatar emojis */
+.avatar-picker-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  gap: 6px; margin-bottom: 12px;
+}
+
+.avatar-opt {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--surface2);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+
+.avatar-opt:hover, .avatar-opt.sel { border-color: var(--accent); background: rgba(104,211,145,0.1); }
+
+/* Color picker */
+.color-picker {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+
+.clr-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clr-btn:hover, .clr-btn.sel {
+  transform: scale(1.15);
+  border-color: rgba(255,255,255,0.4);
+}
+
+/* Settings */
+.settings-list { display: flex; flex-direction: column; gap: 8px; }
+
+.setting-item {
+  display: flex; align-items: center;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  gap: 14px;
+  transition: all 0.15s;
+}
+
+.setting-item:hover { border-color: var(--border2); }
+
+.setting-icon { font-size: 20px; flex-shrink: 0; }
+.setting-info { flex: 1; }
+.setting-name { font-size: 14px; font-weight: 500; margin-bottom: 1px; }
+.setting-desc { font-size: 12px; color: var(--text-muted); font-weight: 300; }
+
+/* Toggle */
+.toggle {
+  width: 42px; height: 24px;
+  background: var(--surface3);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+
+.toggle-thumb {
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.toggle.on .toggle-thumb { transform: translateX(18px); }
+
+/* Save btn */
+.save-bar {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 100;
+  display: none;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.save-bar.show { display: block; }
+
+@keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+.save-btn {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--accent), #50b87a);
+  border: none; border-radius: 14px;
+  color: #000;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(104,211,145,0.3);
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.save-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(104,211,145,0.4); }
+
+/* Danger zone */
+.danger-zone {
+  background: rgba(252,129,129,0.05);
+  border: 1px solid rgba(252,129,129,0.15);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.danger-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 600;
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+
+.btn-danger {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid rgba(252,129,129,0.3);
+  border-radius: 10px;
+  color: var(--danger);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger:hover { background: rgba(252,129,129,0.1); }
+
+/* Toast */
+.toast {
+  position: fixed; top: 20px; right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px; color: var(--text);
+  z-index: 999; opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+<div class="bg-grid"></div>
+
+<div class="page">
+  <a href="chat.html" class="back-btn">← Back to chats</a>
+
+  <!-- Main card -->
+  <div class="profile-card">
+    <!-- Cover -->
+    <div class="profile-cover" id="profileCover">
+      <div class="cover-pattern"></div>
+      <button class="cover-edit" onclick="changeCover()">🎨</button>
+    </div>
+
+    <!-- Avatar & name -->
+    <div class="avatar-area">
+      <div class="avatar-big" id="avatarBig" onclick="scrollToAvatarPicker()">
+        <span id="avatarEmoji">😊</span>
+        <div class="avatar-change-hint">✏️</div>
+      </div>
+      <div class="avatar-info">
+        <div class="profile-name" id="profileNameDisplay">Loading...</div>
+        <div class="profile-username" id="profileUsernameDisplay">@username</div>
+      </div>
+      <div class="avatar-actions">
+        <button class="btn-sm btn-sm-primary" onclick="saveProfile()">Save changes</button>
+        <button class="btn-sm btn-sm-ghost" onclick="location.href='chat.html'">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="statChats">0</div>
+          <div class="stat-label">Chats</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statMessages">0</div>
+          <div class="stat-label">Messages</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">1</div>
+          <div class="stat-label">Account</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Edit info -->
+    <div class="section" id="infoSection">
+      <div class="section-title">Personal information</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full name</label>
+          <input class="form-input" id="editName" placeholder="Your name" oninput="markDirty()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="editUsername" placeholder="@username" oninput="markDirty()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="editEmail" placeholder="email@example.com" oninput="markDirty()">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Bio</label>
+        <textarea class="form-textarea" id="editBio" placeholder="Tell people about yourself..." oninput="markDirty()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Phone (optional)</label>
+        <input class="form-input" type="tel" id="editPhone" placeholder="+1 234 567 890" oninput="markDirty()">
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Avatar picker -->
+    <div class="section">
+      <div class="section-title">Choose avatar</div>
+      <div class="avatar-picker-grid" id="avatarPickerGrid"></div>
+
+      <div class="form-label" style="margin-top:12px">Avatar color</div>
+      <div class="color-picker" id="colorPicker"></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Settings -->
+    <div class="section">
+      <div class="section-title">Preferences</div>
+      <div class="settings-list">
+        <div class="setting-item">
+          <span class="setting-icon">🔔</span>
+          <div class="setting-info">
+            <div class="setting-name">Notifications</div>
+            <div class="setting-desc">Get notified about new messages</div>
+          </div>
+          <div class="toggle on" onclick="toggleSetting(this)" id="notifToggle">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span class="setting-icon">🌙</span>
+          <div class="setting-info">
+            <div class="setting-name">Dark mode</div>
+            <div class="setting-desc">Always enabled for NexusChat</div>
+          </div>
+          <div class="toggle on" style="pointer-events:none;opacity:0.6">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span class="setting-icon">🔒</span>
+          <div class="setting-info">
+            <div class="setting-name">Read receipts</div>
+            <div class="setting-desc">Let others know you've read their messages</div>
+          </div>
+          <div class="toggle on" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span class="setting-icon">⌨️</span>
+          <div class="setting-info">
+            <div class="setting-name">Typing indicator</div>
+            <div class="setting-desc">Show when you're typing</div>
+          </div>
+          <div class="toggle on" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Password change -->
+    <div class="section">
+      <div class="section-title">Security</div>
+      <div class="form-group">
+        <label class="form-label">Current password</label>
+        <input class="form-input" type="password" id="currentPwd" placeholder="Enter current password">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">New password</label>
+          <input class="form-input" type="password" id="newPwd" placeholder="New password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm</label>
+          <input class="form-input" type="password" id="confirmPwd" placeholder="Repeat">
+        </div>
+      </div>
+      <button class="btn-sm btn-sm-ghost" style="margin-top:4px" onclick="changePassword()">Update password</button>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="section">
+      <div class="danger-zone">
+        <div class="danger-title">⚠️ Danger Zone</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;font-weight:300">Once deleted, your account cannot be recovered.</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-danger" onclick="logout()">🚪 Sign out</button>
+          <button class="btn-danger" onclick="deleteAccount()">🗑 Delete account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar" id="saveBar">
+  <button class="save-btn" onclick="saveProfile()">💾 Save changes</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+const AVATARS = ['😊','🦁','🐺','🦊','🐧','🦄','🐱','🤖','👾','🧑‍🚀','🦸','🎭','🐸','🦋','🐙','🦎','😎','🤩','🥷','🧙'];
+const COLORS = [
+  'linear-gradient(135deg,#63b3ed,#4a9fd5)',
+  'linear-gradient(135deg,#9f7aea,#7c5cc4)',
+  'linear-gradient(135deg,#68d391,#50b87a)',
+  'linear-gradient(135deg,#fc8181,#f56565)',
+  'linear-gradient(135deg,#f6ad55,#ed8936)',
+  'linear-gradient(135deg,#4fd1c7,#38b2ac)',
+  'linear-gradient(135deg,#63b3ed,#9f7aea)',
+  'linear-gradient(135deg,#68d391,#63b3ed)',
+];
+const COVER_GRADIENTS = [
+  'linear-gradient(135deg,#63b3ed,#4a9fd5)',
+  'linear-gradient(135deg,#9f7aea,#63b3ed)',
+  'linear-gradient(135deg,#68d391,#4fd1c7)',
+  'linear-gradient(135deg,#fc8181,#f6ad55)',
+  'linear-gradient(135deg,#4fd1c7,#63b3ed)',
+];
+
+let user, isDirty = false, selectedAvatar = null, selectedColor = null, coverIdx = 0;
+
+function init() {
+  const saved = localStorage.getItem('nexus_current');
+  if (!saved) { location.href = '../index.html'; return; }
+  user = JSON.parse(saved);
+
+  // Fill form
+  document.getElementById('editName').value = user.name || '';
+  document.getElementById('editUsername').value = user.username || '';
+  document.getElementById('editEmail').value = user.email || '';
+  document.getElementById('editBio').value = user.bio || '';
+  document.getElementById('editPhone').value = user.phone || '';
+
+  // Display
+  selectedAvatar = user.avatar || '😊';
+  selectedColor = user.avatarColor || COLORS[0];
+  updateAvatarDisplay();
+
+  document.getElementById('profileNameDisplay').textContent = user.name;
+  document.getElementById('profileUsernameDisplay').textContent = '@' + (user.username || user.name.toLowerCase().replace(/\s/g,''));
+
+  // Stats
+  const chats = JSON.parse(localStorage.getItem('nexus_chats') || '[]');
+  document.getElementById('statChats').textContent = chats.length;
+  let totalMsgs = 0;
+  chats.forEach(c => { totalMsgs += (c.messages || []).filter(m => m.senderId === user.id).length; });
+  document.getElementById('statMessages').textContent = totalMsgs;
+
+  // Build pickers
+  buildAvatarPicker();
+  buildColorPicker();
+
+  // Cover
+  coverIdx = user.coverIdx || 0;
+  document.getElementById('profileCover').style.background = COVER_GRADIENTS[coverIdx];
+}
+
+function updateAvatarDisplay() {
+  const big = document.getElementById('avatarBig');
+  big.style.background = selectedColor;
+  document.getElementById('avatarEmoji').textContent = selectedAvatar;
+}
+
+function buildAvatarPicker() {
+  const grid = document.getElementById('avatarPickerGrid');
+  grid.innerHTML = '';
+  AVATARS.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'avatar-opt' + (e === selectedAvatar ? ' sel' : '');
+    div.textContent = e;
+    div.onclick = () => {
+      document.querySelectorAll('.avatar-opt').forEach(x => x.classList.remove('sel'));
+      div.classList.add('sel');
+      selectedAvatar = e;
+      updateAvatarDisplay();
+      markDirty();
+    };
+    grid.appendChild(div);
+  });
+}
+
+function buildColorPicker() {
+  const wrap = document.getElementById('colorPicker');
+  wrap.innerHTML = '';
+  COLORS.forEach((c, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'clr-btn' + (c === selectedColor ? ' sel' : '');
+    btn.style.background = c;
+    btn.onclick = () => {
+      document.querySelectorAll('.clr-btn').forEach(x => x.classList.remove('sel'));
+      btn.classList.add('sel');
+      selectedColor = c;
+      updateAvatarDisplay();
+      markDirty();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function markDirty() {
+  isDirty = true;
+  document.getElementById('saveBar').classList.add('show');
+  // Update preview
+  const name = document.getElementById('editName').value;
+  const username = document.getElementById('editUsername').value;
+  if (name) document.getElementById('profileNameDisplay').textContent = name;
+  if (username) document.getElementById('profileUsernameDisplay').textContent = '@' + username.replace('@','');
+}
+
+function scrollToAvatarPicker() {
+  document.getElementById('infoSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function changeCover() {
+  coverIdx = (coverIdx + 1) % COVER_GRADIENTS.length;
+  document.getElementById('profileCover').style.background = COVER_GRADIENTS[coverIdx];
+  markDirty();
+}
+
+function toggleSetting(el) {
+  el.classList.toggle('on');
+  showToast('Setting updated ✓');
+}
+
+function saveProfile() {
+  const name = document.getElementById('editName').value.trim();
+  const username = document.getElementById('editUsername').value.trim().replace('@','');
+  const email = document.getElementById('editEmail').value.trim();
+  const bio = document.getElementById('editBio').value.trim();
+  const phone = document.getElementById('editPhone').value.trim();
+
+  if (!name) { showToast('Name is required', 'error'); return; }
+
+  user.name = name;
+  user.username = username || name.toLowerCase().replace(/\s/g,'');
+  user.email = email;
+  user.bio = bio;
+  user.phone = phone;
+  user.avatar = selectedAvatar;
+  user.avatarColor = selectedColor;
+  user.coverIdx = coverIdx;
+
+  // Update in users array
+  const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+  const idx = users.findIndex(u => u.id === user.id);
+  if (idx >= 0) users[idx] = user;
+  localStorage.setItem('nexus_users', JSON.stringify(users));
+  localStorage.setItem('nexus_current', JSON.stringify(user));
+
+  isDirty = false;
+  document.getElementById('saveBar').classList.remove('show');
+  document.getElementById('profileNameDisplay').textContent = name;
+  document.getElementById('profileUsernameDisplay').textContent = '@' + user.username;
+
+  showToast('Profile saved! ✨');
+}
+
+function changePassword() {
+  const current = document.getElementById('currentPwd').value;
+  const newPwd = document.getElementById('newPwd').value;
+  const confirm = document.getElementById('confirmPwd').value;
+
+  if (!current || !newPwd || !confirm) { showToast('Fill all password fields', 'error'); return; }
+  if (current !== user.password) { showToast('Current password incorrect', 'error'); return; }
+  if (newPwd !== confirm) { showToast('Passwords don\'t match', 'error'); return; }
+  if (newPwd.length < 8) { showToast('Password too short', 'error'); return; }
+
+  user.password = newPwd;
+  const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+  const idx = users.findIndex(u => u.id === user.id);
+  if (idx >= 0) users[idx] = user;
+  localStorage.setItem('nexus_users', JSON.stringify(users));
+  localStorage.setItem('nexus_current', JSON.stringify(user));
+
+  document.getElementById('currentPwd').value = '';
+  document.getElementById('newPwd').value = '';
+  document.getElementById('confirmPwd').value = '';
+  showToast('Password updated 🔒');
+}
+
+function logout() {
+  if (confirm('Sign out of NexusChat?')) {
+    localStorage.removeItem('nexus_current');
+    location.href = '../index.html';
+  }
+}
+
+function deleteAccount() {
+  if (!confirm('Delete your account? This cannot be undone!')) return;
+  if (!confirm('Are you absolutely sure?')) return;
+
+  const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+  const filtered = users.filter(u => u.id !== user.id);
+  localStorage.setItem('nexus_users', JSON.stringify(filtered));
+  localStorage.removeItem('nexus_current');
+  location.href = '../index.html';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show';
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+window.onload = init;
+window.onbeforeunload = () => isDirty ? 'You have unsaved changes.' : null;
+</script>
+</body>
+</html>
